@@ -11,6 +11,7 @@ namespace EasyVideoScreensaver
     /// </summary>
     public partial class App : Application
     {
+        public static App Instance { get; private set; }
         private HwndSource previewHwndSource;
         private VideoWindow mainWindow;
         private MediaElement media;
@@ -20,6 +21,8 @@ namespace EasyVideoScreensaver
 
         void ApplicationStartup(object sender, StartupEventArgs e)
         {
+            Instance = this;
+
             settingsFilename = System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\VideoScreensaver.xml";
 
             settings = MySettings.Load(settingsFilename);
@@ -64,14 +67,14 @@ namespace EasyVideoScreensaver
             }
         }
 
-        private void ShowScreensaver()
+        public void ShowScreensaver()
         {
             LoadVideo();
 
             foreach (Monitor m in Monitor.AllMonitors)
             {
                 //Show video window on all screens
-                VideoWindow window = new VideoWindow(media);
+                VideoWindow window = new VideoWindow(settings.Videos.ToArray());
                 window.Top = m.Bounds.Top / (m.DpiY / 96);
                 window.Left = m.Bounds.Left / (m.DpiX / 96);
                 window.Height = m.Bounds.Height / (m.DpiY / 96);
@@ -84,7 +87,7 @@ namespace EasyVideoScreensaver
         {
             LoadVideo();
 
-            mainWindow = new VideoWindow(media);
+            mainWindow = new VideoWindow(settings.Videos.ToArray());
 
             NativeMethods.RECT lpRect = new NativeMethods.RECT();
             bool retVal = NativeMethods.GetClientRect(pPreviewHnd, out lpRect);

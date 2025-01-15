@@ -3,8 +3,29 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vlc="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
         mc:Ignorable="d"
         Title="VideoWindow" Height="450" Width="800" Background="Black" WindowState="Normal" WindowStyle="None" ResizeMode="NoResize" KeyDown="Window_KeyDown" MouseDown="Window_MouseDown" Cursor="None">
-    <Rectangle Name="Display">
-    </Rectangle>
+    <Window.Resources>
+        <ContentControl x:Key="MediaElementResource"/>
+    </Window.Resources>
+    <Grid>
+
+        <Rectangle Name="backgroundRectangle">
+            <Rectangle.Effect>
+                <BlurEffect Radius="15"/>
+            </Rectangle.Effect>
+        </Rectangle>
+        <!-- Foreground unblurred video centered -->
+        <Viewbox Name="Display" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Rectangle Name="foregroundRectangle"/>
+        </Viewbox>
+        <!-- Hidden VlcControl for video playback -->
+        <vlc:VlcControl x:Name="vlcControl" Width="1920" Height="1080" Panel.ZIndex="50"/>
+
+        <StackPanel Panel.ZIndex="100" Name="VLCErrorLabel" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Label Foreground="#F3F2ED" FontSize="22" Content="VLC Not Found"/>
+            <Label Foreground="#F3F2ED" FontSize="10" HorizontalAlignment="Center" Content="Download it and set it in setting"/>
+        </StackPanel>
+    </Grid>
 </Window>
