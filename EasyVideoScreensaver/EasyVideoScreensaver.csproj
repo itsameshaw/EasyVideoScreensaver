@@ -94,6 +94,9 @@
       <DependentUpon>ChooseFileWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DVDAnimation.cs" />
+    <Compile Include="PrimaryVideoWindow.xaml.cs">
+      <DependentUpon>PrimaryVideoWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VideoUriRepresentation.cs" />
     <Compile Include="VideoWindow.xaml.cs">
       <DependentUpon>VideoWindow.xaml</DependentUpon>
@@ -103,6 +106,10 @@
     </Compile>
     <Compile Include="VLCValidator.cs" />
     <Page Include="ChooseFileWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="PrimaryVideoWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

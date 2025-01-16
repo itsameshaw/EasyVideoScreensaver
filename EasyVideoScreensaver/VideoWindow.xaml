@@ -3,25 +3,28 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vlc="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
         mc:Ignorable="d"
         Title="VideoWindow" Height="450" Width="800" Background="Black" WindowState="Normal" WindowStyle="None" ResizeMode="NoResize" KeyDown="Window_KeyDown" MouseDown="Window_MouseDown" Cursor="None">
-    <Window.Resources>
-        <ContentControl x:Key="MediaElementResource"/>
-    </Window.Resources>
     <Grid>
 
-        <Rectangle Name="backgroundRectangle">
-            <Rectangle.Effect>
-                <BlurEffect Radius="15"/>
-            </Rectangle.Effect>
-        </Rectangle>
-        <!-- Foreground unblurred video centered -->
-        <Viewbox Name="Display" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Rectangle Name="foregroundRectangle"/>
-        </Viewbox>
-        <!-- Hidden VlcControl for video playback -->
-        <vlc:VlcControl x:Name="vlcControl" Width="1920" Height="1080" Panel.ZIndex="50"/>
+        <Canvas x:Name="BackgroundCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Rectangle Name="BackgroundRectangle">
+                <Rectangle.Effect>
+                    <BlurEffect Radius="32"/>
+                </Rectangle.Effect>
+                <Rectangle.OpacityMask>
+                    <SolidColorBrush Color="#66000000" />
+                </Rectangle.OpacityMask>
+            </Rectangle>
+        </Canvas>
+        <!-- Foreground Video -->
+        <Canvas x:Name="ForegroundCanvas"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Rectangle Name="ForegroundRectangle">
+                <Rectangle.Effect>
+                    <DropShadowEffect BlurRadius="64" Color="#33000000" />
+                </Rectangle.Effect>
+            </Rectangle>
+        </Canvas>
 
         <StackPanel Panel.ZIndex="100" Name="VLCErrorLabel" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Label Foreground="#F3F2ED" FontSize="22" Content="VLC Not Found"/>

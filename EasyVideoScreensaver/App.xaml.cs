@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -69,12 +70,12 @@ namespace EasyVideoScreensaver
 
         public void ShowScreensaver()
         {
-            LoadVideo();
+            PrimaryVideoWindow primaryVideoWindow = LoadPrimaryPlayer();
 
             foreach (Monitor m in Monitor.AllMonitors)
             {
                 //Show video window on all screens
-                VideoWindow window = new VideoWindow(settings.Videos.ToArray());
+                VideoWindow window = new VideoWindow(primaryVideoWindow);
                 window.Top = m.Bounds.Top / (m.DpiY / 96);
                 window.Left = m.Bounds.Left / (m.DpiX / 96);
                 window.Height = m.Bounds.Height / (m.DpiY / 96);
@@ -85,9 +86,8 @@ namespace EasyVideoScreensaver
 
         private void ShowPreview(IntPtr pPreviewHnd)
         {
-            LoadVideo();
-
-            mainWindow = new VideoWindow(settings.Videos.ToArray());
+            PrimaryVideoWindow primaryVideoWindow = LoadPrimaryPlayer();
+            mainWindow = new VideoWindow(primaryVideoWindow);
 
             NativeMethods.RECT lpRect = new NativeMethods.RECT();
             bool retVal = NativeMethods.GetClientRect(pPreviewHnd, out lpRect);
@@ -103,7 +103,7 @@ namespace EasyVideoScreensaver
 
             previewHwndSource = new HwndSource(sourceParams);
             previewHwndSource.Disposed += new EventHandler(previewHwndSource_Disposed);
-            previewHwndSource.RootVisual = mainWindow.Display;
+            previewHwndSource.RootVisual = mainWindow.ForegroundCanvas;
         }
 
         private void ShowSettings()
@@ -118,43 +118,18 @@ namespace EasyVideoScreensaver
             mainWindow.Close();
         }
 
-        private void LoadVideo()
+        private PrimaryVideoWindow LoadPrimaryPlayer()
         {
-            media = new MediaElement();
-            if (!string.IsNullOrEmpty(settings.VideoFilename) && System.IO.File.Exists(settings.VideoFilename))
-            {
-                media.Source = new Uri(settings.VideoFilename, UriKind.Absolute);
-            }
-            switch (settings.StretchMode)
-            {
-                case "Fill":
-                    //Stretch to fit screen
-                    media.Stretch = Stretch.Fill;
-                    break;
-                case "Center":
-                    //Center in screen
-                    media.Stretch = Stretch.None;
-                    break;
-                default:
-                    //Fit to screen (maintain aspect ratio)
-                    media.Stretch = Stretch.Uniform;
-                    break;
-            }
-            media.Volume = settings.Volume;
-            media.IsMuted = settings.Mute;
-            if (settings.Resume)
-            {
-                media.Position = TimeSpan.FromSeconds(settings.ResumePosition);
-            }
+            PrimaryVideoWindow primaryVideoWindow = new PrimaryVideoWindow(settings.Videos.ToArray());
+            var mainMonitor = Monitor.AllMonitors.First(m => { return m.IsPrimary; });
+            primaryVideoWindow.Top = mainMonitor.Bounds.Top / (mainMonitor.DpiY / 96);
+            primaryVideoWindow.Left = mainMonitor.Bounds.Left / (mainMonitor.DpiX / 96);
+            primaryVideoWindow.Height = mainMonitor.Bounds.Height / (mainMonitor.DpiY / 96);
+            primaryVideoWindow.Width = mainMonitor.Bounds.Width / (mainMonitor.DpiX / 96);
+            primaryVideoWindow.Show();
+            primaryVideoWindow.Hide();
 
-            //Detect when media ends
-            media.MediaEnded += Media_MediaEnded;
-        }
-
-        private void Media_MediaEnded(object sender, RoutedEventArgs e)
-        {
-            //Loop video
-            media.Position = TimeSpan.Zero;
+            return primaryVideoWindow;
         }
 
     }

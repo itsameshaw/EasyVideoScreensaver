@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -25,97 +26,118 @@ namespace EasyVideoScreensaver
         private MySettings settings = ((App)Application.Current).settings;
         private string settingsFilename = ((App)Application.Current).settingsFilename;
         private DVDAnimation vlcNotFoundAnimation;
+        private bool firstStart = true;
 
-        public static VlcControl GlobalVlcControl;
-
-        public VideoWindow(string[] urls)
+        public VideoWindow(PrimaryVideoWindow primaryWindow)
         {
             InitializeComponent();
-            InitializeVLCIfNeeeded();
 
             if (VLCValidator.IsValidVLCInstallation(settings.VLCPath))
             {
                 VLCErrorLabel.Visibility = Visibility.Hidden;
-                // Play the video
+                primaryWindow.VLCControlCreated += PrimaryWindow_VLCControlCreated;
             }
             else
             {
                 vlcNotFoundAnimation = new DVDAnimation(VLCErrorLabel, this);
             }
-        }
-
-        private void Play()
-        {
-            if (GlobalVlcControl == null) { return; }
-            var fileToPlay = settings.Videos.First();
-            var uri = new Uri(fileToPlay);
-            vlcControl.SourceProvider.MediaPlayer.Play(uri);
-        }
-
-        private void PlayNext()
-        {
 
         }
 
-        private void InitializeVLCIfNeeeded()
+        private void PrimaryWindow_VLCControlCreated(object sender, VlcControl e)
         {
-            if (GlobalVlcControl != null) { return; }
-            if (!VLCValidator.IsValidVLCInstallation(settings.VLCPath)) { return; }
-
-            var libDirectory = new DirectoryInfo(settings.VLCPath);
-
-            //var mediaLog = new FileStream("F:\\vlc_log.txt", FileMode.Create); 
-            var vlcOptions = new[] { "-vvv", // Verbose mode
-                $"--file-logging", // Enable logging to a file
-                $"--logfile=F:\\vlc_log.txt" // Specify log file
-            };
-
-            vlcControl.SourceProvider.CreatePlayer(libDirectory, vlcOptions);
-            vlcControl.SourceProvider.MediaPlayer.EndReached += MediaPlayer_EndReached;
-            vlcControl.SourceProvider.MediaPlayer.EncounteredError += MediaPlayer_EncounteredError;
-            vlcControl.SourceProvider.MediaPlayer.Buffering += MediaPlayer_Buffering;
-            vlcControl.SourceProvider.MediaPlayer.Audio.Volume = settings.Mute ? 0 : (int)(settings.Volume * 100);
-            GlobalVlcControl = vlcControl;
-            Play();
+            SetVisualBrushes(e);
         }
 
-        private void MediaPlayer_Buffering(object sender, Vlc.DotNet.Core.VlcMediaPlayerBufferingEventArgs e)
+        private void SetVisualBrushes(VlcControl vlcControl)
         {
+            BackgroundCanvas.Width = this.Width;
+            BackgroundCanvas.Height = this.Height;
+
+            BackgroundRectangle.Width = BackgroundCanvas.Width; 
+            BackgroundRectangle.Height = BackgroundCanvas.Height;
+            
+            var visualBrush = new VisualBrush(vlcControl) { 
+                Stretch = Stretch.UniformToFill 
+            }; 
+            BackgroundRectangle.Fill = visualBrush; 
+            ForegroundRectangle.Fill = visualBrush;
+            CenterAndSizeForeground(vlcControl);
+
+            if (firstStart)
+            {
+                firstStart = false;
+                this.SizeChanged += delegate
+                {
+                    SetVisualBrushes(vlcControl);
+                };
+                vlcControl.SourceProvider.MediaPlayer.MediaChanged += delegate
+                {
+                    CenterAndSizeForeground(vlcControl);
+                };
+            }
         }
 
-        private void MediaPlayer_EncounteredError(object sender, Vlc.DotNet.Core.VlcMediaPlayerEncounteredErrorEventArgs e)
+        private void CenterAndSizeForeground(VlcControl vlcControl)
         {
-            PlayNext();
-        }
+            double videoWidth = -1;
+            double videoHeight = -1;
 
-        private void MediaPlayer_EndReached(object sender, Vlc.DotNet.Core.VlcMediaPlayerEndReachedEventArgs e)
-        {
-            PlayNext();
+            var mediaPlayer = vlcControl.SourceProvider.MediaPlayer;
+            var tracks = mediaPlayer.GetMedia().TracksInformations.ToList();
+            var videoTracks = tracks.FindAll(track => track.Type == MediaTrackTypes.Video);
+            if (videoTracks.Count > 0)
+            {
+                var videoTrack = videoTracks.First();
+                videoWidth = videoTrack.Video.Width;
+                videoHeight = videoTrack.Video.Height;
+            }
+
+            if (videoHeight <= 0 || videoWidth <= 0 || ActualHeight <= 0 || ActualHeight <= 0)
+            {
+                Trace.WriteLine("Wrong video size, hopefully will be fixed in the next call");
+                return;
+            }
+
+            double windowAspect = ActualWidth / ActualHeight;
+            double videoAspect = videoWidth / videoHeight;
+
+            if (windowAspect > videoAspect)
+            {
+                // Window is wider than video
+                double newHeight = ActualHeight;
+                double newWidth = newHeight * videoAspect;
+                ForegroundRectangle.Width = newWidth;
+                ForegroundRectangle.Height = newHeight;
+            }
+            else
+            {
+                // Window is taller than video
+                double newWidth = ActualWidth;
+                double newHeight = newWidth / videoAspect;
+                ForegroundRectangle.Width = newWidth;
+                ForegroundRectangle.Height = newHeight;
+            }
+
+            // Center the ForegroundRectangle
+            Canvas.SetLeft(ForegroundRectangle, (ActualWidth - ForegroundRectangle.Width) / 2);
+            Canvas.SetTop(ForegroundRectangle, (ActualHeight - ForegroundRectangle.Height) / 2);
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            //Close screensaver when key is pressed
             e.Handled = true;
             CloseScreensaver();
         }
 
         private void Window_MouseDown(object sender, MouseEventArgs e)
         {
-            //Close screensaver when mouse is moved
             e.Handled = true;
             CloseScreensaver();
         }
 
         private void CloseScreensaver()
         {
-            //Save resume position
-            if (settings.Resume)
-            {
-                settings.ResumePosition = vlcControl.SourceProvider?.MediaPlayer?.Position ?? 0;
-                settings.Save(settingsFilename);
-            }
-
             //Close screensaver
             Application.Current.Shutdown();
         }
