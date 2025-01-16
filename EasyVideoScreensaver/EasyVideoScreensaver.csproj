@@ -90,10 +90,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Buit-in Plugins\DefaultHandler.cs" />
     <Compile Include="ChooseFileWindow.xaml.cs">
       <DependentUpon>ChooseFileWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DVDAnimation.cs" />
+    <Compile Include="ISaverPlugin.cs" />
+    <Compile Include="PluginManager.cs" />
     <Compile Include="PrimaryVideoWindow.xaml.cs">
       <DependentUpon>PrimaryVideoWindow.xaml</DependentUpon>
     </Compile>
